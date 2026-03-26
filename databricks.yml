@@ -1,0 +1,15 @@
+bundle:
+  name: flight-analytics-platform
+
+variables:
+  catalog_name:
+    default: aviation_prod
+  storage_root:
+    default: "abfss://aviation-data@yourstorage.dfs.core.windows.net/"
+
+targets:
+  dev:
+    workspace:
+      host: https://adb-7405605185991044.4.azuredatabricks.net
+    variables:
+      catalog_name: aviation_dev
