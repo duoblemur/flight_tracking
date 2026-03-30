@@ -1,16 +1,22 @@
 bundle:
   name: flight-analytics-platform
 
+
+include:
+  - resources/*.yml
+
 variables:
-  catalog_name:
+  catalog:
     default: dbr_dev
 
 targets:
   dev:
+    mode: development
+    default: true
     workspace:
       host: https://adb-7405605185991044.4.azuredatabricks.net
     variables:
-      catalog_name: dbr_dev
+      catalog: dbr_dev
 
 resources:
   pipelines:
