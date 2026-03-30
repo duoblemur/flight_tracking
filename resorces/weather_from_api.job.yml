@@ -1,7 +1,7 @@
 resources:
   jobs:
     weather_from_api:
-      name: weather_from_api
+      name: "Weather Ingestion & Silver Transformations"
       schedule:
         quartz_cron_expression: 0 0/15 * * * ?  # every 15 minutes
         timezone_id: UTC
