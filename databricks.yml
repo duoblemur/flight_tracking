@@ -16,7 +16,6 @@ resources:
   pipelines:
     flight_silver_pipeline:
       name: "[${bundle.target}] Flight Silver DLT"
-      # ВИПРАВЛЕНО: додано .value
       catalog: ${variables.catalog_name.value} 
       target: skybound_silver
       libraries:
@@ -28,7 +27,7 @@ resources:
             min_workers: 1
             max_workers: 2
       channel: PREVIEW
-      continuous: true
+      continuous: false
       development: true
 
   jobs:
@@ -50,9 +49,10 @@ resources:
             spark_version: "14.3.x-scala2.12"
             node_type_id: Standard_DS3_v2
             num_workers: 1
+            data_security_mode: SINGLE_USER
 
       continuous:
-        pause_status: PAUSED # Зміни на UNPAUSED, якщо хочеш автозапуск
+        pause_status: PAUSED
 
     vacuum_maintenance_job:
       name: "[${bundle.target}] Bronze Vacuum Maintenance"
@@ -68,14 +68,15 @@ resources:
             spark_version: "14.3.x-scala2.12"
             node_type_id: Standard_DS3_v2
             num_workers: 0
-            # ВИПРАВЛЕНО: обов'язкові параметри для Single Node (num_workers: 0)
             spark_conf:
               spark.databricks.cluster.profile: singleNode
               spark.master: "local[*]"
               spark.databricks.delta.retentionDurationCheck.enabled: "false"
             custom_tags:
               ResourceClass: SingleNode
+            data_security_mode: SINGLE_USER
 
       schedule:
         quartz_cron_expression: "0 0 * * * ?"
         timezone_id: UTC
+        pause_status: PAUSED
