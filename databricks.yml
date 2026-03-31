@@ -42,22 +42,26 @@ resources:
     flight_ingestion_job:
       name: "[${bundle.target}] Flight Ingestion & Silver"
       tasks:
-        - task_key: ingest_bronze
-          job_cluster_key: small_cluster
-          notebook_task:
-            notebook_path: ./src/producers/flights_producer.ipynb
+        # NOTE: ingest_bronze disabled — producer now runs locally.
+        # Uncomment to re-enable Databricks-based ingestion.
+        # - task_key: ingest_bronze
+        #   job_cluster_key: small_cluster
+        #   notebook_task:
+        #     notebook_path: ./src/producers/flights_producer.ipynb
 
         - task_key: transform_silver
           pipeline_task:
             pipeline_id: ${resources.pipelines.flight_silver_pipeline.id}
 
-      job_clusters:
-        - job_cluster_key: small_cluster
-          new_cluster:
-            spark_version: "14.3.x-scala2.12"
-            node_type_id: Standard_DS3_v2
-            num_workers: 1
-            data_security_mode: SINGLE_USER
+      # NOTE: small_cluster disabled — only used by ingest_bronze.
+      # Uncomment if re-enabling ingest_bronze.
+      # job_clusters:
+      #   - job_cluster_key: small_cluster
+      #     new_cluster:
+      #       spark_version: "14.3.x-scala2.12"
+      #       node_type_id: Standard_DS3_v2
+      #       num_workers: 1
+      #       data_security_mode: SINGLE_USER
 
       continuous:
         pause_status: PAUSED
