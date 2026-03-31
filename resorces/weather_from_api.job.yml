@@ -1,14 +1,14 @@
 resources:
   jobs:
     weather_from_api:
-      name: weather_from_api
+      name: "Weather Ingestion & Silver Transformations"
       schedule:
         quartz_cron_expression: 0 0/15 * * * ?  # every 15 minutes
         timezone_id: UTC
       tasks:
         - task_key: bronze_producer_ingestion
           notebook_task:
-            notebook_path: ../src/weather_processing/01_weather_producer.ipynb
+            notebook_path: ../src/weather_from_api/01_weather_producer.ipynb
             base_parameters:
               catalog: "${var.catalog}"
             source: WORKSPACE
@@ -17,7 +17,7 @@ resources:
           depends_on:
             - task_key: bronze_producer_ingestion
           notebook_task:
-            notebook_path: ../src/weather_processing/02_weather_transformations.ipynb
+            notebook_path: ../src/weather_from_api/02_weather_transformations.ipynb
             base_parameters:
               catalog: "${var.catalog}"
             source: WORKSPACE

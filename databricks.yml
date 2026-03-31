@@ -8,6 +8,8 @@ include:
 variables:
   catalog:
     default: dbr_dev
+  catalog_name:
+    default: dbr_dev
 
 targets:
   dev:
@@ -85,3 +87,28 @@ resources:
       schedule:
         quartz_cron_expression: "0 0 * * * ?"
         timezone_id: UTC
+
+    weather_from_api:
+      name: "Weather Ingestion & Silver Transformations"
+      schedule:
+        quartz_cron_expression: 0 0/15 * * * ?  # every 15 minutes
+        timezone_id: UTC
+      tasks:
+        - task_key: bronze_producer_ingestion
+          notebook_task:
+            notebook_path: ./src/weather_processing/01_weather_producer.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+        - task_key: silver_weather_transformations
+          depends_on:
+            - task_key: bronze_producer_ingestion
+          notebook_task:
+            notebook_path: ./src/weather_processing/02_weather_transformations.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+      queue:
+        enabled: true
