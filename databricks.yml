@@ -7,8 +7,6 @@ include:
 variables:
   catalog:
     default: dbr_dev
-  catalog_name:
-    default: dbr_dev
 
 targets:
   dev:
@@ -75,3 +73,46 @@ resources:
         quartz_cron_expression: "0 0 * * * ?"
         timezone_id: UTC
         pause_status: PAUSED
+
+    weather_processing_job:
+      name: "[${bundle.target}] Weather Transformations & Aggregations"
+      schedule:
+        quartz_cron_expression: 0 0/15 * * * ?  # every 15 minutes
+        timezone_id: UTC
+      tasks:
+        - task_key: silver_weather_transformations
+          notebook_task:
+            notebook_path: ./src/weather_job/01_weather_transformations.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+        - task_key: gold_fact_weather_with_airports
+          depends_on:
+            - task_key: silver_weather_transformations
+          notebook_task:
+            notebook_path: ./src/weather_job/02_gold_fact_airport_weather_reports.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+        - task_key: gold_agg_current_snapshot
+          depends_on:
+            - task_key: gold_fact_weather_with_airports
+          notebook_task:
+            notebook_path: ./src/weather_job/03_gold_agg_current_snapshot.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+        - task_key: gold_agg_current_country
+          depends_on:
+            - task_key: gold_fact_weather_with_airports
+          notebook_task:
+            notebook_path: ./src/weather_job/04_gold_agg_country_current.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          existing_cluster_id: 0211-145306-i704nq9e
+      queue:
+        enabled: true
