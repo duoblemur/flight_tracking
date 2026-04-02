@@ -7,8 +7,6 @@ include:
 variables:
   catalog:
     default: dbr_dev
-  catalog_name:
-    default: dbr_dev
 
 targets:
   dev:
@@ -75,3 +73,60 @@ resources:
         quartz_cron_expression: "0 0 * * * ?"
         timezone_id: UTC
         pause_status: PAUSED
+
+    weather_processing_job:
+      name: "[${bundle.target}] Weather Transformations & Aggregations"
+      schedule:
+        quartz_cron_expression: 0 0/30 * * * ?  # every 30 minutes
+        timezone_id: UTC
+      tasks:
+        - task_key: silver_weather_transformations
+          notebook_task:
+            notebook_path: ./src/weather_job/01_silver_transformations.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          job_cluster_key: weather_job_cluster
+        - task_key: gold_fact_weather_with_airports
+          depends_on:
+            - task_key: silver_weather_transformations
+          notebook_task:
+            notebook_path: ./src/weather_job/02_gold_fact_airport_weather_reports.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          job_cluster_key: weather_job_cluster
+        - task_key: gold_agg_current_snapshot
+          depends_on:
+            - task_key: gold_fact_weather_with_airports
+          notebook_task:
+            notebook_path: ./src/weather_job/03_gold_agg_current_snapshot.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          job_cluster_key: weather_job_cluster
+        - task_key: gold_agg_current_country
+          depends_on:
+            - task_key: gold_fact_weather_with_airports
+          notebook_task:
+            notebook_path: ./src/weather_job/04_gold_agg_country_current.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+            source: WORKSPACE
+          job_cluster_key: weather_job_cluster
+      job_clusters:
+        - job_cluster_key: weather_job_cluster
+          new_cluster:
+            spark_version: 17.3.x-scala2.13
+            node_type_id: Standard_F4
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            data_security_mode: SINGLE_USER
+            runtime_engine: STANDARD
+            kind: CLASSIC_PREVIEW
+            use_ml_runtime: false
+            is_single_node: true
+      
+      queue:
+        enabled: true
+
