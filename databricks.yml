@@ -1,7 +1,6 @@
 bundle:
   name: flight-analytics-platform
 
-
 include:
   - resources/*.yml
 
@@ -22,49 +21,33 @@ targets:
 
 resources:
   pipelines:
-    flight_silver_pipeline:
-      name: "[${bundle.target}] Flight Silver DLT"
-      catalog: ${variables.catalog_name.value} 
-      target: skybound_silver
+    flight_unified_pipeline:
+      name: "[${bundle.target}] Unified Flight Pipeline"
+      catalog: dbr_dev
+      target: skybound_gold
       libraries:
         - notebook:
-            path: ./src/dlt/flight_processing.ipynb
+            path: ./src/dlt/flight_processing.ipynb 
+        - notebook:
+            path: ./src/dlt/flight_silver_gold_transform.ipynb
       clusters:
         - label: default
-          autoscale:
-            min_workers: 1
-            max_workers: 2
-      channel: PREVIEW
+          num_workers: 0
+          spark_conf:
+            spark.databricks.cluster.profile: singleNode
+            spark.master: "local[*]"
+          custom_tags:
+            ResourceClass: SingleNode
       continuous: false
       development: true
 
   jobs:
     flight_ingestion_job:
-      name: "[${bundle.target}] Flight Ingestion & Silver"
       tasks:
-        # NOTE: ingest_bronze disabled — producer now runs locally.
-        # Uncomment to re-enable Databricks-based ingestion.
-        # - task_key: ingest_bronze
-        #   job_cluster_key: small_cluster
-        #   notebook_task:
-        #     notebook_path: ./src/producers/flights_producer.ipynb
-
-        - task_key: transform_silver
+        - task_key: run_unified_pipeline
           pipeline_task:
-            pipeline_id: ${resources.pipelines.flight_silver_pipeline.id}
-
-      # NOTE: small_cluster disabled — only used by ingest_bronze.
-      # Uncomment if re-enabling ingest_bronze.
-      # job_clusters:
-      #   - job_cluster_key: small_cluster
-      #     new_cluster:
-      #       spark_version: "14.3.x-scala2.12"
-      #       node_type_id: Standard_DS3_v2
-      #       num_workers: 1
-      #       data_security_mode: SINGLE_USER
-
-      continuous:
-        pause_status: PAUSED
+            pipeline_id: ${resources.pipelines.flight_unified_pipeline.id}
+            full_refresh: false
 
     vacuum_maintenance_job:
       name: "[${bundle.target}] Bronze Vacuum Maintenance"
